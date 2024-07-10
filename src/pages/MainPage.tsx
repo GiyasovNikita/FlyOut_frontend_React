@@ -15,6 +15,33 @@ interface Airport {
     city_name: string;
 }
 
+interface FlightDetails {
+    flight_id: number;
+    origin_airport: string;
+    destination_airport: string;
+    airline_code: string;
+    flight_number: string;
+    departure_at: string;
+    return_at: string;
+    duration: number;
+    origin_city_name: string;
+    destination_city_name: string;
+    origin_airport_name: string;
+    destination_airport_name: string;
+    details: {
+        flight_details_id: number;
+        flight_id: number;
+        price: string;
+        currency: string;
+        baggage: boolean;
+    };
+}
+
+interface ConnectingFlight {
+    firstLeg: FlightDetails;
+    secondLeg: FlightDetails;
+}
+
 const MainPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { data: cities, loading, error } = useSelector((state: RootState) => state.cities);
@@ -23,7 +50,14 @@ const MainPage: React.FC = () => {
     const [selectedArrivalAirport, setSelectedArrivalAirport] = useState<Airport | null>(null);
     const [startDate, setStartDate] = useState<Date | null>(new Date());
     const [endDate, setEndDate] = useState<Date | null>(null);
-    const [flights, setFlights] = useState<any[]>([]); // Добавьте состояние для хранения списка рейсов
+    const [flights, setFlights] = useState<{ directFlights: FlightDetails[], connectingFlights: ConnectingFlight[] }>({
+        directFlights: [],
+        connectingFlights: []
+    });
+    const [returnFlights, setReturnFlights] = useState<{ directFlights: FlightDetails[], connectingFlights: ConnectingFlight[] }>({
+        directFlights: [],
+        connectingFlights: []
+    });
 
     useEffect(() => {
         dispatch(fetchCities());
@@ -55,6 +89,20 @@ const MainPage: React.FC = () => {
             }
         } else {
             console.log('Please select departure, arrival, and start date');
+        }
+        if (selectedArrivalAirport && selectedDepartureAirport && endDate) {
+            const returnDate = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())); // Устанавливаем время на полночь UTC
+            const returnDateUTC = returnDate.toISOString().split('T')[0]; // Форматируем дату как YYYY-MM-DD
+
+            const returnUrl = `http://localhost:5000/api/flights/filter?origin=${selectedArrivalAirport.airport_code}&destination=${selectedDepartureAirport.airport_code}&departureDate=${returnDateUTC}`;
+
+            try {
+                const returnResponse = await axios.get(returnUrl);
+                setReturnFlights(returnResponse.data);
+                console.log('Return Filtered Data:', returnResponse.data);
+            } catch (error) {
+                console.error('Error fetching return filtered data:', error);
+            }
         }
     };
 
@@ -89,29 +137,41 @@ const MainPage: React.FC = () => {
                 Найти
             </Button>
             <Box mt={4}>
-                {flights.map((flight, index) => (
+                {flights.directFlights.map((flight, index) => (
                     <FlightCard
                         key={index}
-                        airline_code={flight.airline_code}
-                        departure_at={flight.departure_at}
-                        destination_airport={flight.destination_airport}
-                        destination_airport_name={flight.destination_airport_name}
-                        destination_city_name={flight.destination_city_name}
-                        baggage={flight.details.baggage}
-                        currency={flight.details.currency}
-                        price={flight.details.price}
-                        duration={flight.duration}
-                        flight_number={flight.flight_number}
-                        origin_airport={flight.origin_airport}
-                        origin_airport_name={flight.origin_airport_name}
-                        origin_city_name={flight.origin_city_name}
-                        return_at={flight.return_at}
+                        flight={flight}
+                        isConnecting={false}
+                    />
+                ))}
+                {flights.connectingFlights.map((flight, index) => (
+                    <FlightCard
+                        key={index}
+                        flight={flight}
+                        isConnecting={true}
                     />
                 ))}
             </Box>
+            {endDate && (
+                <Box mt={4}>
+                    {returnFlights.directFlights.map((flight, index) => (
+                        <FlightCard
+                            key={index}
+                            flight={flight}
+                            isConnecting={false}
+                        />
+                    ))}
+                    {returnFlights.connectingFlights.map((flight, index) => (
+                        <FlightCard
+                            key={index}
+                            flight={flight}
+                            isConnecting={true}
+                        />
+                    ))}
+                </Box>
+            )}
         </>
     );
 };
 
 export default MainPage;
-

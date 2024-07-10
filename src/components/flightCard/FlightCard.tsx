@@ -1,15 +1,17 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 
-interface FlightCardProps {
+interface FlightDetails {
     airline_code: string;
     departure_at: string;
     destination_airport: string;
     destination_airport_name: string;
     destination_city_name: string;
-    baggage: boolean;
-    currency: string;
-    price: string;
+    details: {
+        baggage: boolean;
+        currency: string;
+        price: string;
+    };
     duration: number;
     flight_number: string;
     origin_airport: string;
@@ -18,56 +20,92 @@ interface FlightCardProps {
     return_at: string;
 }
 
-const FlightCard: React.FC<FlightCardProps> = ({
-                                                   airline_code,
-                                                   departure_at,
-                                                   destination_airport,
-                                                   destination_airport_name,
-                                                   destination_city_name,
-                                                   baggage,
-                                                   currency,
-                                                   price,
-                                                   duration,
-                                                   flight_number,
-                                                   origin_airport,
-                                                   origin_airport_name,
-                                                   origin_city_name,
-                                                   return_at,
-                                               }) => {
-    const departureDate = new Date(departure_at).toLocaleDateString();
-    const departureTime = new Date(departure_at).toLocaleTimeString();
-    const arrivalDate = new Date(return_at).toLocaleDateString();
-    const arrivalTime = new Date(return_at).toLocaleTimeString();
-    const durationHours = Math.floor(duration / 60);
-    const durationMinutes = duration % 60;
+interface FlightCardProps {
+    flight: FlightDetails | { firstLeg: FlightDetails; secondLeg: FlightDetails };
+    isConnecting: boolean;
+}
+
+const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting }) => {
+    const formatDateTime = (dateTime: string) => {
+        const date = new Date(dateTime);
+        return {
+            date: date.toLocaleDateString(),
+            time: date.toLocaleTimeString(),
+        };
+    };
+
+    if (isConnecting) {
+        const { firstLeg, secondLeg } = flight as { firstLeg: FlightDetails; secondLeg: FlightDetails };
+        //const firstDeparture = formatDateTime(firstLeg.departure_at);
+        //const firstReturn = formatDateTime(firstLeg.return_at);
+        //const secondDeparture = formatDateTime(secondLeg.departure_at);
+        //const secondReturn = formatDateTime(secondLeg.return_at);
+
+        return (
+            <Box border={1} borderRadius={8} p={2} mb={2}>
+                <Typography variant="h5">{firstLeg.details.price} {firstLeg.details.currency}</Typography>
+                <Typography>Багаж {firstLeg.details.baggage ? 'включен' : 'не включен'}</Typography>
+                {[firstLeg, secondLeg].map((leg, index) => (
+                    <Box key={index} display="flex" alignItems="center" my={2}>
+                        <Box mr={2}>
+                            <Typography variant="h6">{formatDateTime(leg.departure_at).time}</Typography>
+                            <Typography>{leg.origin_city_name}</Typography>
+                            <Typography>{formatDateTime(leg.departure_at).date}</Typography>
+                            <Typography>{leg.origin_airport_name}</Typography>
+                        </Box>
+                        <Box display="flex" flexDirection="column" alignItems="center" mx={2}>
+                            <Typography variant="subtitle2">{leg.airline_code}</Typography>
+                            <Typography>В пути: {Math.floor(leg.duration / 60)}ч {leg.duration % 60}мин</Typography>
+                            <Box display="flex" alignItems="center">
+                                <Typography>{leg.origin_airport}</Typography>
+                                <Typography> - </Typography>
+                                <Typography>{leg.destination_airport}</Typography>
+                            </Box>
+                        </Box>
+                        <Box ml={2}>
+                            <Typography variant="h6">{formatDateTime(leg.return_at).time}</Typography>
+                            <Typography>{leg.destination_city_name}</Typography>
+                            <Typography>{formatDateTime(leg.return_at).date}</Typography>
+                            <Typography>{leg.destination_airport_name}</Typography>
+                        </Box>
+                    </Box>
+                ))}
+                <Button variant="contained" color="primary">Выбрать билет</Button>
+            </Box>
+        );
+    }
+
+    const directFlight = flight as FlightDetails;
+    const departure = formatDateTime(directFlight.departure_at);
+    const returnTime = formatDateTime(directFlight.return_at);
 
     return (
         <Box border={1} borderRadius={8} p={2} mb={2}>
             <Box display="flex" justifyContent="space-between">
-                <Typography variant="h5">{price} {currency}</Typography>
-                <Typography>Багаж {baggage ? 'включен' : 'не включен'}</Typography>
+                <Typography variant="h5">{directFlight.details.price} {directFlight.details.currency}</Typography>
+                <Typography>Багаж {directFlight.details.baggage ? 'включен' : 'не включен'}</Typography>
             </Box>
             <Box display="flex" alignItems="center">
                 <Box mr={2}>
-                    <Typography variant="h6">{departureTime}</Typography>
-                    <Typography>{origin_city_name}</Typography>
-                    <Typography>{departureDate}</Typography>
-                    <Typography>{origin_airport_name}</Typography>
+                    <Typography variant="h6">{departure.time}</Typography>
+                    <Typography>{directFlight.origin_city_name}</Typography>
+                    <Typography>{departure.date}</Typography>
+                    <Typography>{directFlight.origin_airport_name}</Typography>
                 </Box>
                 <Box display="flex" flexDirection="column" alignItems="center" mx={2}>
-                    <Typography variant="subtitle2">{airline_code}</Typography>
-                    <Typography>В пути: {durationHours}ч {durationMinutes}мин</Typography>
+                    <Typography variant="subtitle2">{directFlight.airline_code}</Typography>
+                    <Typography>В пути: {Math.floor(directFlight.duration / 60)}ч {directFlight.duration % 60}мин</Typography>
                     <Box display="flex" alignItems="center">
-                        <Typography>{origin_airport}</Typography>
+                        <Typography>{directFlight.origin_airport}</Typography>
                         <Typography> - </Typography>
-                        <Typography>{destination_airport}</Typography>
+                        <Typography>{directFlight.destination_airport}</Typography>
                     </Box>
                 </Box>
                 <Box ml={2}>
-                    <Typography variant="h6">{arrivalTime}</Typography>
-                    <Typography>{destination_city_name}</Typography>
-                    <Typography>{arrivalDate}</Typography>
-                    <Typography>{destination_airport_name}</Typography>
+                    <Typography variant="h6">{returnTime.time}</Typography>
+                    <Typography>{directFlight.destination_city_name}</Typography>
+                    <Typography>{returnTime.date}</Typography>
+                    <Typography>{directFlight.destination_airport_name}</Typography>
                 </Box>
             </Box>
             <Button variant="contained" color="primary">Выбрать билет</Button>
@@ -76,3 +114,4 @@ const FlightCard: React.FC<FlightCardProps> = ({
 };
 
 export default FlightCard;
+
