@@ -1,31 +1,14 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
-
-interface FlightDetails {
-    airline_code: string;
-    departure_at: string;
-    destination_airport: string;
-    destination_airport_name: string;
-    destination_city_name: string;
-    details: {
-        baggage: boolean;
-        currency: string;
-        price: string;
-    };
-    duration: number;
-    flight_number: string;
-    origin_airport: string;
-    origin_airport_name: string;
-    origin_city_name: string;
-    return_at: string;
-}
+import {ConnectingFlight, FlightDetails} from "../../../types.ts";
 
 interface FlightCardProps {
-    flight: FlightDetails | { firstLeg: FlightDetails; secondLeg: FlightDetails };
+    flight: FlightDetails | ConnectingFlight;
     isConnecting: boolean;
+    onSelectFlight: (flight: FlightDetails | ConnectingFlight, isConnecting: boolean) => void;
 }
 
-const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting }) => {
+const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting, onSelectFlight }) => {
     const formatDateTime = (dateTime: string) => {
         const date = new Date(dateTime);
         return {
@@ -36,10 +19,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting }) => {
 
     if (isConnecting) {
         const { firstLeg, secondLeg } = flight as { firstLeg: FlightDetails; secondLeg: FlightDetails };
-        //const firstDeparture = formatDateTime(firstLeg.departure_at);
-        //const firstReturn = formatDateTime(firstLeg.return_at);
-        //const secondDeparture = formatDateTime(secondLeg.departure_at);
-        //const secondReturn = formatDateTime(secondLeg.return_at);
+        /*const firstDeparture = formatDateTime(firstLeg.departure_at);
+        const firstReturn = formatDateTime(firstLeg.return_at);
+        const secondDeparture = formatDateTime(secondLeg.departure_at);
+        const secondReturn = formatDateTime(secondLeg.return_at);*/
 
         return (
             <Box border={1} borderRadius={8} p={2} mb={2}>
@@ -70,7 +53,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting }) => {
                         </Box>
                     </Box>
                 ))}
-                <Button variant="contained" color="primary">Выбрать билет</Button>
+                <Button variant="contained" color="primary" onClick={() => onSelectFlight(flight, true)}>Выбрать билет</Button>
             </Box>
         );
     }
@@ -108,7 +91,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight, isConnecting }) => {
                     <Typography>{directFlight.destination_airport_name}</Typography>
                 </Box>
             </Box>
-            <Button variant="contained" color="primary">Выбрать билет</Button>
+            <Button variant="contained" color="primary" onClick={() => onSelectFlight(flight, false)}>Выбрать билет</Button>
         </Box>
     );
 };
